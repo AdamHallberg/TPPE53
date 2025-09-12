@@ -1,5 +1,5 @@
 import numpy as np
-from scipy import ndimage
+from scipy.stats import norm
 import matplotlib.pyplot as plt
 
 
@@ -46,6 +46,32 @@ def thomas_algorithm(A, d):
     return x
 
 
+def bsm_analytical(S, K, T, r, sigma, option_type="call"):
+    """
+    Black-Scholes-Merton analytical option pricing formula.
+    
+    Parameters:
+    S: current stock price or array of prices
+    K: strike price
+    T: time to expiration (years)
+    r: risk-free rate
+    sigma: volatility
+    option_type: "call" or "put"
+    
+    Returns:
+    option_price: analytical BSM price(s)
+    """
+    d1 = (np.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
+    d2 = d1 - sigma * np.sqrt(T)
+    
+    if option_type == "call":
+        option_price = S * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
+    else:
+        option_price = K * np.exp(-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
+    
+    return option_price
+
+
 def finite_differences(S_low, S_high, T, N, M, K, r, sigma, option="call", theta = 0.5):
     """
     INPUT: 
@@ -55,37 +81,55 @@ def finite_differences(S_low, S_high, T, N, M, K, r, sigma, option="call", theta
         Vector of price of option for different S_0 for inputed K.
 
     NOTES:
-        Defaults to Crank-Nicholson for call options. 
+        theta = 0.5: ( Default )
+        This is the Crank-Nicholson scheme. Crank-Nicholasson is unconditionally stable,
+        so we do not need to consider the grid spaceing because of stability constraints.
+
+        theta = 1: (Fullt implicit)
+        This is the Fully-implicit scheme. This is also unconditionally stable, so we do
+        not need to consider the grid spaceing because of stability constraints.
+
+        theta = 0: ( Fully explicit)
+        This is the Fully-explicit scheme. This is conditionally stable so we need to 
+        choose Delta t leq fraq{(Delta S)^2}{(sigma S_{max})^2 + r Delta S}
+
+        Other theta:
+        I dont think there is a general solution for other thetas so this might or 
+        might not work for other thetas.
+
     """
 
     #   Discritization 
-    dt = T / N
-    dS = (S_high - S_low) / M
-    time = np.linspace(0, T, N+1)
-    price = np.linspace(S_low, S_high, M+1)
+    dt      = T / N
+    dS      = (S_high - S_low) / M
+    time    = np.linspace(0, T, N+1)
+    price   = np.linspace(S_low, S_high, M+1)
 
-    # Setup terminal condition
+    # Setup terminal condition, from 1c)
     if option == "call":
         V = np.maximum(price - K, 0)
     else:
         V = np.maximum(K - price, 0)
 
+    
+
     # Setup matrices, A*V^{n+1} = B*V^n
     # Problem: How do we get the current price? 
     # Solution:
     j_idx = np.arange(1, M)    # Gives [1, 2, ..., M-1]
-    S_j = price[j_idx]          # Vector of all relevan prices between S_low and S_high
+    S_j = price[j_idx]         # Vector of all relevan prices between S_low and S_high
 
     # We construct help variables as we did in task 1a) 
-    alpha = -0.5 * dt * theta * (sigma**2 * S_j**2 / dS**2 - r * S_j / dS)
-    beta = 1 + dt * theta * (sigma**2 * S_j**2 / dS**2 + r)
-    gamma = -0.5 * dt * theta * (sigma**2 * S_j**2 / dS**2 + r * S_j / dS)
-    
-    # For matrix B (right-hand side)
-    delta = 0.5 * dt * (1-theta) * (sigma**2 * S_j**2 / dS**2 - r * S_j / dS)
-    epsilon = 1 - dt * (1-theta) * (sigma**2 * S_j**2 / dS**2 + r)
-    zeta = 0.5 * dt * (1-theta) * (sigma**2 * S_j**2 / dS**2 + r * S_j / dS)
-    
+    # For matrix A
+    alpha = -theta * (r * S_j) / (2*dS) + theta * 0.5 * (sigma**2 * S_j**2) / (dS**2)
+    beta  = 1/dt - theta * (sigma**2 * S_j**2) / (dS**2)
+    gamma = theta * (r * S_j) / (2*dS) + theta * 0.5 * (sigma**2 * S_j**2) / (dS**2)
+
+    # For matrix B  
+    delta = (1-theta) * (r * S_j) / (2*dS) - (1-theta) * 0.5 * (sigma**2 * S_j**2) / (dS**2)
+    epsilon = 1/dt + r + (1-theta) * (sigma**2 * S_j**2) / (dS**2)
+    zeta = -(1-theta) * (r * S_j) / (2*dS) - (1-theta) * 0.5 * (sigma**2 * S_j**2) / (dS**2)
+        
     A = np.zeros((M-1, M-1))
     B = np.zeros((M-1, M-1))
 
@@ -106,12 +150,15 @@ def finite_differences(S_low, S_high, T, N, M, K, r, sigma, option="call", theta
 
     for n in range(N-1, -1, -1):
         # Boundary conditions
+        current_time = time[n]
+        time_to_maturity = T - current_time
+    
         if option == "call":
-            V[0] = 0
-            V[-1] = price[-1] - K * np.exp(-r*(T-time[n]))
+            V[0] = 0  
+            V[-1] = S_high - K * np.exp(-r * time_to_maturity) 
         else:
-            V[0]  = K * np.exp(-r*(T-time[n]))
-            V[-1] = 0
+            V[0] = K * np.exp(-r * time_to_maturity)  
+            V[-1] = 0  
 
         #   Update solution
         V_internal = V[1:M].copy()  # internal points at current time
@@ -129,31 +176,49 @@ def finite_differences(S_low, S_high, T, N, M, K, r, sigma, option="call", theta
 
 #   Constants
 K = 100
-S_low = 0
-S_high = 200
-T = 1.0  # 1 year
+T = 1.0     # Enhet?? År eler?
 N = 100
 M = 100
-r = 0.01
-sigma = 0.2
+r = 0.01    # Enhet?
+sigma = 0.2 # Enhet?
+option="call"
 
+# From 1.b)
+S_low = 51.268
+S_high = 191.191
 
 
 # Price the option
 # price - stock price
 # V     - option price as function of stock price
-price, V = finite_differences(S_low, S_high, T, N, M, K, r, sigma, option="call", theta=0.5)
+price, V = finite_differences(S_low, S_high, T, N, M, K, r, sigma, option, theta=0.5)
 
-# Plot results
-plt.figure(figsize=(10, 6))
-plt.plot(price, V)
-plt.xlabel('Stock Price')
-plt.ylabel('Option Price')
-plt.title('Call Option Price vs. Stock Price')
-plt.grid(True)
-plt.show()
+if False:
+    # Plot results
+    plt.figure(figsize=(10, 6))
+    plt.plot(price, V)
+    plt.xlabel('Stock Price')
+    plt.ylabel('Option Price')
+    plt.title(f"{option} Option Price vs. Stock Price for K = {K} and T = {T}[y]")
+    plt.grid(True)
+    plt.show()
+
+    # Wierd results for the endpoint? 
 
 
-print(V)
+price   = np.linspace(S_low, S_high, M+1)
+analytical_results = bsm_analytical(price, K, T, r, sigma, option_type="call")
 
-print("Done.")
+if True:
+    # Compare our prices and BSM prices
+    plt.figure(figsize=(10, 6))
+    plt.plot(price, V, 'b-', linewidth=2, label='Finite Difference')
+    plt.plot(price, analytical_results, 'r--', linewidth=2, label='Analytical BSM')
+    plt.legend(['FD-method','analytical solution'])
+    plt.xlabel('Stock Price')
+    plt.ylabel('Option Price')
+    plt.title(f'{option} Option Price Comparison (K={K}, T={T} [y], σ={sigma}, r={r})', fontsize=14)    
+    plt.grid(True)
+    plt.show()
+
+    # Wierd results for the endpoint? 

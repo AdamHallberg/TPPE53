@@ -110,29 +110,41 @@ def finite_differences(S_low, S_high, T, N, M, K, r, sigma, option="call", theta
         V = np.maximum(price - K, 0)
     else:
         V = np.maximum(K - price, 0)
-
     
 
     # Setup matrices, A*V^{n+1} = B*V^n
-    # Problem: How do we get the current price? 
-    # Solution:
     j_idx = np.arange(1, M)    # Gives [1, 2, ..., M-1]
-    S_j = price[j_idx]         # Vector of all relevan prices between S_low and S_high
+    S_j = price[j_idx]         # Vector of all relevant prices between S_low and S_high
 
     # We construct help variables as we did in task 1a) 
+    
     # For matrix A
-    alpha = -theta * (r * S_j) / (2*dS) + theta * 0.5 * (sigma**2 * S_j**2) / (dS**2)
-    beta  = 1/dt - theta * (sigma**2 * S_j**2) / (dS**2)
-    gamma = theta * (r * S_j) / (2*dS) + theta * 0.5 * (sigma**2 * S_j**2) / (dS**2)
+    alpha = -theta * (r * S_j) / (2*dS) \
+            + theta * 0.5 * (sigma**2 * S_j**2) / (dS**2)
+
+    beta  = 1/dt \
+            - theta * (sigma**2 * S_j**2) / (dS**2) \
+            - theta * r   
+
+    gamma = theta * (r * S_j) / (2*dS) \
+            + theta * 0.5 * (sigma**2 * S_j**2) / (dS**2)
 
     # For matrix B  
-    delta = (1-theta) * (r * S_j) / (2*dS) - (1-theta) * 0.5 * (sigma**2 * S_j**2) / (dS**2)
-    epsilon = 1/dt + r + (1-theta) * (sigma**2 * S_j**2) / (dS**2)
-    zeta = -(1-theta) * (r * S_j) / (2*dS) - (1-theta) * 0.5 * (sigma**2 * S_j**2) / (dS**2)
+    delta = (1-theta) * (r * S_j) / (2*dS) \
+            - (1-theta) * 0.5 * (sigma**2 * S_j**2) / (dS**2)
+
+    epsilon = 1/dt \
+              + (1-theta) * (sigma**2 * S_j**2) / (dS**2) \
+              + (1-theta) * r
+
+    zeta = -(1-theta) * (r * S_j) / (2*dS) \
+           - (1-theta) * 0.5 * (sigma**2 * S_j**2) / (dS**2)
+
         
     A = np.zeros((M-1, M-1))
     B = np.zeros((M-1, M-1))
 
+    # This might be possible to do differently
     for k in range(M-1):
         if k > 0:
             A[k, k-1] = alpha[k]
@@ -143,16 +155,18 @@ def finite_differences(S_low, S_high, T, N, M, K, r, sigma, option="call", theta
             A[k, k+1] = gamma[k]
             B[k, k+1] = zeta[k]
 
-    # Now that we have constructed A and B
-    
-    # Solve sytem from BC to t_0
-
+    #   Now that we have constructed A and B
+    #   we can solve, V^n = inv(B)*A*V^{n+1}
+    #   iteratively. With Boundary conditions
+    #   at S_low and S_high (V[0] and V[-1])
+    #   according to 1c).
 
     for n in range(N-1, -1, -1):
         # Boundary conditions
         current_time = time[n]
         time_to_maturity = T - current_time
     
+        # BC are different depending on put or call.
         if option == "call":
             V[0] = 0  
             V[-1] = S_high - K * np.exp(-r * time_to_maturity) 
@@ -162,11 +176,15 @@ def finite_differences(S_low, S_high, T, N, M, K, r, sigma, option="call", theta
 
         #   Update solution
         V_internal = V[1:M].copy()  # internal points at current time
-        d = B @ V_internal
-        
-        # Solve AV^{n+1} = d for internal points
-        V_next_internal = thomas_algorithm(A, d)
+        d = A @ V_internal
+                
+        d[0]  += alpha[0] * V[0]
+        d[-1] += gamma[-1] * V[-1]
 
+        # Solve V^{n} = inv(B)*A*V^{n+1} 
+        #V_next_internal = thomas_algorithm(B, d)
+        V_next_internal = np.linalg.solve(B, d)
+        
         V[1:M] = V_next_internal
 
 
@@ -192,6 +210,7 @@ S_high = 191.191
 # price - stock price
 # V     - option price as function of stock price
 price, V = finite_differences(S_low, S_high, T, N, M, K, r, sigma, option, theta=0.5)
+
 
 if False:
     # Plot results

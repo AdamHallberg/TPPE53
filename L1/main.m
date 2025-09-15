@@ -13,21 +13,26 @@ rng('default');
 format long
 clc;
 
+%% Read OIS data
+[OIS, option_data] = get_ois("ois_data.xlsx");
+
 %% Setup variables
 K = 100;
 S0 = 100;
 T = 1;
 N = 100;
-M = 100;
-r = 0.01;
+M = 100; % kanskeändra detta till beroende av options datan
+r = riskfree(OIS, T);
+r(1:floor(T*365)); % only use the rates we need 
 sigma = 0.2;
 q = 0;
-option = 'put';
+option = 'call';
 type = "eu";
 
 % Caculate S_low and S_high to satisfy P(S(T) not in [S_low, S_high]) =
 % 0.999
-[S_low, S_high] = price_bounds(S0, r, sigma, T, 1-0.999);
+[S_low, S_high] = price_bounds(S0, r(end), sigma, T, 1-0.999);
+S_low = floor(S_low); S_high = ceil(S_high);
 
 %% Calculate prices
 % Our FD prices
@@ -52,10 +57,10 @@ grid on;
 
 %% Surf plot
 figure;
-surf(price, time, F);
+surf(time, price, F);
 hold on;
-xlabel('Stock Price');
-ylabel('Time');
+xlabel('Time');
+ylabel('Spot Price');
 zlabel('Value of Option')
 title(sprintf('%s Option Price Over Time and Spot ', option));
 grid on;

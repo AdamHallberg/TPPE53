@@ -1,4 +1,4 @@
-function [F, price, time] = finite_differences(S_low, S_high, T, N, M, K, r, sigma, option)
+function [F, price, time] = finite_differences(S_low, S_high, T, N, M, K, r, sigma, option, q, type)
 % FINITE_DIFFERENCES - Finite difference method for option pricing
 %
 % In derivation we handle the system AF_n = BF_{n+1} but here we are
@@ -13,8 +13,8 @@ function [F, price, time] = finite_differences(S_low, S_high, T, N, M, K, r, sig
     % F is going to hold all of the option values
     F = zeros(M+1, N+1);
     
-    % Terminal condition, simple for European option from 1c)
-    if strcmp(option, 'Call')
+    % Terminal condition, simple for European option from 1c) (same for US)
+    if strcmp(option, 'Call') || strcmp(option, 'call')
         F(:, end) = max(price - K, 0);
     else
         F(:, end) = max(K - price, 0);
@@ -24,7 +24,7 @@ function [F, price, time] = finite_differences(S_low, S_high, T, N, M, K, r, sig
     S_j = price(2:end-1);  % Points j=2 to M
     
     % Get the matrices describing the dynamics
-    [A, B, alpha1, gamma_end] = crank_nicholson_coeff(S_j, r, sigma, dt, dS);
+    [A, B, alpha1, gamma_end] = crank_nicholson_coeff(S_j, r, sigma, dt, dS, q);
     
     % Here, A and B are (M-1)x(M-1) and handle the inner points and alpha_1
     % and gamma_end are what is needed to handle the BC ad price(1) and
@@ -39,22 +39,22 @@ function [F, price, time] = finite_differences(S_low, S_high, T, N, M, K, r, sig
         time_to_maturity = (n-2) * dt;  % Time to maturity at step n-1
         F_known = F(:, n); % F_known contains solution at time step n (known)
         
-        % Boundary conditions at time step n (known)
-        if strcmp(option, 'Call')
+        % Boundary conditions at time step n (known), Ev diskonteringsfel
+        if strcmp(option, 'Call') || strcmp(option, 'call')
             F_low_known = 0;
             F_high_known = S_high - K*exp(-r*(time_to_maturity + dt));
         else
-            F_low_known = K*exp(-r*(time_to_maturity + dt));
+            F_low_known = K*exp(-r*(time_to_maturity + dt)) - S_low;
             F_high_known = 0;
         end
         
         % Boundary conditions at time step n-1 (unknown) we talk about
         % these conditions in task 1c)
-        if strcmp(option, 'Call')
+        if strcmp(option, 'Call') || strcmp(option, 'call') 
             F_low = 0;
             F_high = S_high - K*exp(-r*time_to_maturity);
         else
-            F_low = K*exp(-r*time_to_maturity);
+            F_low = K*exp(-r*time_to_maturity) - S_low;
             F_high = 0;
         end
         
@@ -67,7 +67,19 @@ function [F, price, time] = finite_differences(S_low, S_high, T, N, M, K, r, sig
         
         % Solve for interior points at time n-1
         F_n_int = A \ rhs;
-        
+
+        if(strcmp(type, "us"))
+            if(strcmp(option, "Call") || strcmp(option, "call)"))
+                payoff_int = max(S_j - K, 0); 
+            else
+                payoff_int = max(K - S_j, 0);
+            end
+
+            % Fel med diskonterin här
+
+            F_n_int = max(payoff_int, F_n_int);
+        end
+
         % Store solution
         F(2:end-1, n-1) = F_n_int;
         F(1, n-1) = F_low;
@@ -75,4 +87,3 @@ function [F, price, time] = finite_differences(S_low, S_high, T, N, M, K, r, sig
     end
 
 end
-

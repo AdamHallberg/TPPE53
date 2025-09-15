@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Author:  Adam Hallberg
+% Author:  Adam Hallberg, Oscar Ljungdahl
 % Date:    2025-09-13
 % Status:  Incomplete
 %
@@ -21,16 +21,18 @@ N = 100;
 M = 100;
 r = 0.01;
 sigma = 0.2;
-option = 'Call';
+q = 0;
+option = 'put';
+type = "eu";
 
 % Caculate S_low and S_high to satisfy P(S(T) not in [S_low, S_high]) =
 % 0.999
-[S_low, S_high] = price_bounds(S0, r, sigma, T, 1-0.999)
+[S_low, S_high] = price_bounds(S0, r, sigma, T, 1-0.999);
 
 %% Calculate prices
 % Our FD prices
 [F, price, time] = finite_differences(S_low, S_high, T, N, M, K,...
-                                      r, sigma, option);
+                                      r, sigma, option, q, type);
 
 % Analytical solution
 analytical_results = bsm_analytical(price, K, T, r, sigma, option);

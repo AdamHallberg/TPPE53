@@ -1,4 +1,4 @@
-function [r_out] = riskfree(OIS, T, N)
+function [r_out] = riskfree(OIS, T)
 
     % Sort OIS contracts by maturity.
     [~, sorted_indices] = sort([OIS.Maturity]);
@@ -37,8 +37,9 @@ function [r_out] = riskfree(OIS, T, N)
     end
     
     % Create an equally spaced time grid for the output.
-    time_out = linspace(0, T, N);
+    time_out = 1:floor(T*360);
     
     % Interpolate the calculated rates onto the output grid.
-    r_out = interp1([0, tau], [0, rates], time_out, 'linear', 'extrap');
+    P_out = interp1([0, tau], [1, P], time_out/360, 'linear', 'extrap');
+    r_out = -log(P_out) ./ (time_out/360);
 end

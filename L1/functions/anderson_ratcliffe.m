@@ -1,4 +1,4 @@
-function [F, price, time] = anderson_ratcliffe(S_low, S_high, T, N, M, K, r, sigma, option, q, type)
+function [F, x_grid, time] = anderson_ratcliffe(x_low, x_high, T, N, M, K, r, sigma, option, type)
 % FINITE_DIFFERENCES - Finite difference method for option pricing
 %
 % In derivation we handle the system AF_n = BF_{n+1} but here we are
@@ -6,27 +6,27 @@ function [F, price, time] = anderson_ratcliffe(S_low, S_high, T, N, M, K, r, sig
 
     % We start by defining our discretization
     dt = T / N;
-    dS = (S_high - S_low) / M;
+    dx = (x_high - x_low) / M;
     time = linspace(0, T, N+1)';
-    price = linspace(S_low, S_high, M+1)';
+    x_grid = linspace(x_low, x_high, M+1)'; 
 
     % F is going to hold all of the option values
     F = zeros(M+1, N+1);
     
     % Terminal condition, simple for European option from 1c) (same for US)
     if strcmp(option, 'Call') || strcmp(option, 'call')
-        F(:, end) = max(price - K, 0);
+        F(:, end) = max(x_grid - K, 0);
     else
-        F(:, end) = max(K - price, 0);
+        F(:, end) = max(K - x_grid, 0);
     end
     
     % Internal grid points
-    S_j = price(2:end-1);  % Points j=2 to M
+    S_j = x_grid(2:end-1);  % Points j=2 to M
   
     
     % Here, A and B are (M-1)x(M-1) and handle the inner points and alpha_1
-    % and gamma_end are what is needed to handle the BC ad price(1) and
-    % price(end)
+    % and gamma_end are what is needed to handle the BC ad x_grid(1) and
+    % x_grid(end)
 
     % Now we are to solve this system from time N+1 where we have knowledge
     % about the terminal conditions and move backward to "our time" or what
@@ -36,7 +36,9 @@ function [F, price, time] = anderson_ratcliffe(S_low, S_high, T, N, M, K, r, sig
     for n = N+1:-1:2
 
         % Get the matrices describing the dynamics
-        [A, B, alpha1, gamma_end] = andersen_ratcliffe_coeff(S_j, r, sigma, n, dt, dS);
+        v_j = sigma(n-1)^2;
+        b_j = r(n-1) - 0.5*v_j;
+        [A, B, alpha1, gamma_end] = andersen_ratcliffe_coeff(v_j, b_j, r(n-1), dt, dx);
 
         time_to_maturity = (n-2) * dt;  % Time to maturity at step n-1
         F_known = F(:, n); % F_known contains solution at time step n (known)
@@ -44,9 +46,9 @@ function [F, price, time] = anderson_ratcliffe(S_low, S_high, T, N, M, K, r, sig
         % Boundary conditions at time step n (known), Ev diskonteringsfel
         if strcmp(option, 'Call') || strcmp(option, 'call')
             F_low_known = 0;
-            F_high_known = S_high - K*exp(-r*(time_to_maturity + dt));
+            F_high_known = x_high - K*exp(-r(n-1)*(time_to_maturity + dt));
         else
-            F_low_known = K*exp(-r*(time_to_maturity + dt)) - S_low;
+            F_low_known = K*exp(-r(n-1)*(time_to_maturity + dt)) - x_low;
             F_high_known = 0;
         end
         
@@ -54,9 +56,9 @@ function [F, price, time] = anderson_ratcliffe(S_low, S_high, T, N, M, K, r, sig
         % these conditions in task 1c)
         if strcmp(option, 'Call') || strcmp(option, 'call') 
             F_low = 0;
-            F_high = S_high - K*exp(-r*time_to_maturity);
+            F_high = x_high - K*exp(-r(n-1)*time_to_maturity);
         else
-            F_low = K*exp(-r*time_to_maturity) - S_low;
+            F_low = K*exp(-r(n-1)*time_to_maturity) - x_low;
             F_high = 0;
         end
         

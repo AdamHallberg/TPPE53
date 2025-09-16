@@ -1,26 +1,33 @@
-function [A, B, alpha_1, gamma_end] = andersen_ratcliffe_coeff(S_j, r, sigma, i, dt, dS)
-    % Create Matrices and Coefficients for the Crank-Nicolson scheme (theta = 0.5)
-    %
-    % Correct form: A*F^{n} = B*F^{n+1}
-    v_hat = sigma(i)^2;       
-    b_hat = r(i) - 0.5*v_hat;  % N long
-
-    M = length(S_j);
-
-    % Coefficients for L without dt
-    a = (v_hat) / (2 * dS^2) - b_hat / (2 * dS);
-    b = - (v_hat) / (dS^2) - r;
-    c = (v_hat) / (2 * dS^2) + b_hat / (2 * dS);
+function [A, B, alpha_1, gamma_end] = andersen_ratcliffe_coeff(v_j, b_j, r_j, dt, dx)
+    % vol: vector of local implicit volatility for internal points at time
+    % j we do however not have a dependence on the price here.
+    % b_j: defined as in article
+    % r_j: interest rate for time j
+    % dt: time step
+    % dx: spacing in x-direction
     
-    % Build L_mat (tridiagonal matrix for L)
-    L_mat = diag(b) + diag(a(2:end), -1) + diag(c(1:end-1), 1);
+    M = length(v_j);
+    alpha = dt / (dx^2);
     
-    % Crank-Nicolson matrices
-    A = eye(M) - 0.5 * dt * L_mat;
-    B = eye(M) + 0.5 * dt * L_mat;
-
-    % Coeficcients needed for handeling the boundary conditions. By ooking
-    % at the matrices in a) it is obvious where these come from. 
-    alpha_1 = a;
-    gamma_end = c;
+    % Initialize coefficients for the tridiagonal matrix M
+    l = zeros(M, 1); % subdiagonal elements (for H_{i-1})
+    c = zeros(M, 1); % diagonal elements (for H_i)
+    u = zeros(M, 1); % superdiagonal elements (for H_{i+1})
+    
+    for i = 1:M
+        l(i) = 0.5 * alpha * (v_j(i) - dx * b_j(i));
+        c(i) = -alpha * v_j(i);
+        u(i) = 0.5 * alpha * (v_j(i) + dx * b_j(i));
+    end
+    
+    % Build the tridiagonal matrix M
+    M_mat = diag(c) + diag(l(2:end), -1) + diag(u(1:end-1), 1);
+    
+    % Build matrices A and B for the system: A * H_j = B * H_{j+1} + boundary terms
+    A = (1 + r_j * dt) * eye(M) - 0.5 * M_mat;
+    B = 0.5 * M_mat + eye(M);
+    
+    % Boundary coefficients: l1 for left boundary, uN for right boundary
+    alpha_1 = l(1);
+    gamma_end = u(M);
 end

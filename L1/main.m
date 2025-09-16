@@ -4,6 +4,7 @@
 % Status:  Incomplete
 %
 % Comments:
+%   
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Setup
@@ -21,14 +22,14 @@ clc;
 K = 2680;
 S0 = 2600;
 T = 1;
-N = 100;
+N = 200;
 M = 100; % kanskeändra detta till beroende av options datan
 r = riskfree(OIS, T);
 [sigma, k_hat] = implied_volatility(option_data, K);
 r = r(1:floor(T*365)); % only use the rates we need 
 sigma = sigma(1:floor(T*365)); % same here
 q = 0;
-option = 'call';
+option = 'put';
 type = "eu";
 
 % Caculate S_low and S_high to satisfy P(S(T) not in [S_low, S_high]) =
@@ -39,7 +40,7 @@ S_low = floor(S_low); S_high = ceil(S_high);
 %% Calculate prices
 % Our FD prices
 clc
-if false
+if true
     [F, price, time] = finite_differences(S_low, S_high, T, N, M, K,...
                                       r(end), sigma(end), option, q, type);
 else
@@ -71,3 +72,36 @@ ylabel('Spot Price');
 zlabel('Value of Option')
 title(sprintf('%s Option Price Over Time and Spot ', option));
 grid on;
+
+
+%% Delta Calculation
+
+% Approximation
+delta_approx = option_delta(F, price);
+delta_bsm = delta_analytical(price, K, T, r(end), sigma(end), option);
+
+%% Delta Comparison
+figure;
+plot(price, delta_approx(:, 1), 'b-', 'LineWidth', 2);
+hold on;
+plot(price, bsm_delta, 'r--', 'LineWidth', 2);
+legend('FD-method', 'analytical solution');
+xlabel('Stock Price');
+ylabel('Option Price');
+title(sprintf(['Call Option Price Comparison (K=%d, T=%.1f, ...' ...
+                    'σ=%.1f, r=%.2f)'], K, T, sigma, r));
+grid on;
+
+%% Surf plot of delta
+% Fungerar sådär, måste fixa option_delta.m
+figure;
+surf(time, price, delta_approx);
+hold on;
+xlabel('Time');
+ylabel('Spot Price');
+zlabel('Value of Option')
+title(sprintf('%s Option Price Over Time and Spot ', option));
+grid on;
+
+
+

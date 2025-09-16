@@ -11,36 +11,43 @@ close all;
 clear;
 rng('default');
 format long
+addpath('functions/');
 clc;
 
 %% Read OIS data
-[OIS, option_data] = get_ois("ois_data.xlsx");
+[OIS, option_data] = read_excel_file("ois_data.xlsx");
 
 %% Setup variables
-K = 100;
-S0 = 100;
+K = 2680;
+S0 = 2600;
 T = 1;
 N = 100;
 M = 100; % kanskeändra detta till beroende av options datan
 r = riskfree(OIS, T);
-r(1:floor(T*365)); % only use the rates we need 
-sigma = 0.2;
+[sigma, k_hat] = implied_volatility(option_data, K);
+r = r(1:floor(T*365)); % only use the rates we need 
+sigma = sigma(1:floor(T*365)); % same here
 q = 0;
 option = 'call';
 type = "eu";
 
 % Caculate S_low and S_high to satisfy P(S(T) not in [S_low, S_high]) =
 % 0.999
-[S_low, S_high] = price_bounds(S0, r(end), sigma, T, 1-0.999);
+[S_low, S_high] = price_bounds(S0, r(end), sigma(end), T, 1-0.999);
 S_low = floor(S_low); S_high = ceil(S_high);
 
 %% Calculate prices
 % Our FD prices
-[F, price, time] = finite_differences(S_low, S_high, T, N, M, K,...
-                                      r, sigma, option, q, type);
-
+clc
+if false
+    [F, price, time] = finite_differences(S_low, S_high, T, N, M, K,...
+                                      r(end), sigma(end), option, q, type);
+else
+    [F, price, time] = anderson_ratcliffe(S_low, S_high, T, N, M, K,...
+                                      r, sigma, option, type);
+end
 % Analytical solution
-analytical_results = bsm_analytical(price, K, T, r, sigma, option);
+analytical_results = bsm_analytical(price, K, T, r(end), sigma(end), option);
 
 %% Comparision of FD and Analytical
 figure;

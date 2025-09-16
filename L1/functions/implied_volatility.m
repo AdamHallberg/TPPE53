@@ -1,4 +1,4 @@
-function [vol] = implied_volatility(option_data)
+function [vol_series, K_closest] = implied_volatility(option_data, K)
 
     strike = option_data(:,1);
     imp_vol = option_data(:,2);
@@ -32,5 +32,9 @@ function [vol] = implied_volatility(option_data)
         view(45,30)                 % set viewing angl
     end
 
+    % Get the implied volatility time series for our strike.
+    [~, idx] = min(abs(K_vec - K));   
+    K_closest = K_vec(idx);           
+    vol_series = vol(:, idx)*0.01; % also convert to decimal         
 end
 

@@ -39,6 +39,8 @@ type = "eu";
 S_low = floor(S_low); S_high = ceil(S_high);
 
 % Price boundaries, 
+S0 = log(2600);
+K = log(K);
 x_low = log(S_low);
 x_high = log(S_high);
 

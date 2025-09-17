@@ -4,7 +4,7 @@
 % Status:  Incomplete
 %
 % Comments:
-%   Uppgift 1 är klar, dock verkar delta vara fel.
+%   Uppgift 1 är klar.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Setup
@@ -23,7 +23,7 @@ K = 2680;
 S0 = 2600;
 T = 1;
 N = floor(T*365); % Discretization in time
-M = 200; % 
+M = 100; % 
 r = riskfree(OIS, T);
 [sigma, k_hat] = implied_volatility(option_data, K);
 r = r(1:floor(T*365)); % only use the rates we need 
@@ -40,15 +40,11 @@ S_low = floor(S_low); S_high = ceil(S_high);
 %% Calculate prices
 % Our FD prices
 clc
-if true
-    [F, price, time] = finite_differences(S_low, S_high, T, N, M, K,...
-                                      r(end), sigma(end), option, q, type);
-else
-    [F, price, time] = anderson_ratcliffe(S_low, S_high, T, N, M, K,...
-                                      r, sigma, option, type);
-end
-% Analytical solution
-analytical_results = bsm_analytical(price, K, T, r(end), sigma(end), option);
+[F, price, time] = finite_differences(S_low, S_high, T, N, M, K,...
+                                      r(1), sigma(1), option, q, type);
+
+    % Analytical solution
+analytical_results = bsm_analytical(price, K, T, r(1), sigma(1), option);
 
 %% Comparision of FD and Analytical
 figure;

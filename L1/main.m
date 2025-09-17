@@ -28,9 +28,7 @@ r = riskfree(OIS, T);
 [sigma, k_hat] = implied_volatility(option_data, K);
 r = r(1:floor(T*365)); % only use the rates we need 
 sigma = sigma(1:floor(T*365)); % same here
-q = 0;
 option = 'Call';
-type = "eu";
 
 % Caculate S_low and S_high to satisfy P(S(T) not in [S_low, S_high]) =
 % 0.999
@@ -41,7 +39,7 @@ S_low = floor(S_low); S_high = ceil(S_high);
 % Our FD prices
 clc
 [F, price, time] = finite_differences(S_low, S_high, T, N, M, K,...
-                                      r(1), sigma(1), option, q, type);
+                                      r(1), sigma(1), option, q);
 
     % Analytical solution
 analytical_results = bsm_analytical(price, K, T, r(1), sigma(1), option);
@@ -51,12 +49,12 @@ figure;
 plot(price, F(:,1), 'b-', 'LineWidth', 2);
 hold on;
 plot(price, analytical_results, 'r--', 'LineWidth', 2);
-legend('FD-method', 'analytical solution');
-xlabel('Stock Price');
+legend('FD-method', 'analytical solution', Location='best');
+xlabel('Spot Price');
 ylabel('Option Price');
-title(sprintf(['Call Option Price Comparison (K=%d, T=%.1f, ...' ...
-                    'σ=%.1f, r=%.2f)'], K, T, sigma, r));
+title(sprintf('%s Option Price Comparison ', option));
 grid on;
+
 
 
 %% Surf plot
@@ -87,7 +85,7 @@ plot(price, delta_approx(:, 1), 'b-', 'LineWidth', 2);
 hold on;
 plot(price, delta_bsm, 'r--', 'LineWidth', 2);
 legend('FD-method', 'analytical solution');
-xlabel('Stock Price');
+xlabel('Spot Price');
 ylabel('Option Price');
 title(sprintf(['Call Option Price Comparison (K=%d, T=%.1f, ...' ...
                     'σ=%.1f, r=%.2f)'], K, T, sigma, r));

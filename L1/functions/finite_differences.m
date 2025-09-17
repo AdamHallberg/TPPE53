@@ -36,7 +36,7 @@ function [F, price, time] = finite_differences(S_low, S_high, T, N, M, K, r, sig
     % the values for n=1 which is what we are intrested in finding out.
 
     for n = N+1:-1:2
-        time_to_maturity = (n-2) * dt;  % Time to maturity at step n-1
+        time_to_maturity = ((N+1) - (n-2)) * dt;  % Time to maturity at step n-1
         F_known = F(:, n); % F_known contains solution at time step n (known)
         
         % Boundary conditions at time step n (known), Ev diskonteringsfel
@@ -62,6 +62,8 @@ function [F, price, time] = finite_differences(S_low, S_high, T, N, M, K, r, sig
         rhs = B * F_known(2:end-1);
        
         % Handle BC 
+
+        % A F_n = BF_{n+1} = rhs => F_n = A\rhs
         rhs(1) = rhs(1) + 0.5*dt*alpha1*(F_low_known + F_low);
         rhs(end) = rhs(end) + 0.5*dt*gamma_end*(F_high_known + F_high);
         

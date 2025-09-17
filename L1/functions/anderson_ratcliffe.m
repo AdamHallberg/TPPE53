@@ -36,7 +36,7 @@ function [F, x_grid, time] = anderson_ratcliffe(x_low, x_high, T, N, M, K, r, si
     for n = N+1:-1:2
 
         % Get the matrices describing the dynamics
-        v_j = sigma(n-1)^2;
+        v_j = sigma(n-1)^2; % might change to constant
         b_j = r(n-1) - 0.5*v_j;
         [A, B, alpha1, gamma_end] = andersen_ratcliffe_coeff(v_j, b_j, r(n-1), dt, dx);
 
@@ -66,8 +66,8 @@ function [F, x_grid, time] = anderson_ratcliffe(x_low, x_high, T, N, M, K, r, si
         rhs = B * F_known(2:end-1);
        
         % Handle BC 
-        rhs(1) = rhs(1) + 0.5*dt*alpha1*(F_low_known + F_low);
-        rhs(end) = rhs(end) + 0.5*dt*gamma_end*(F_high_known + F_high);
+        rhs(1) = rhs(1) + alpha1*(F_low_known + F_low);
+        rhs(end) = rhs(end) + gamma_end*(F_high_known + F_high);
         
         % Solve for interior points at time n-1
         F_n_int = A \ rhs;

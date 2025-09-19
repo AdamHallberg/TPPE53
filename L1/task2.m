@@ -1,10 +1,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Author:  Adam Hallberg, Oscar Ljungdahl
-% Date:    2025-09-13
-% Status:  Incomplete
+% Date:    2025-09-19
+% Status:  Complete
 %
 % Comments:
-%   Task 2 now done. Still not fixed grid scaling for the delta tough. 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Setup
@@ -23,7 +22,7 @@ K = 2680;
 S0 = 2600;
 T = 1;
 N = floor(T*365); % Discretization in time
-M = 200; % 
+M = 100; % 
 r = riskfree(OIS, T);
 [sigma, k_hat] = implied_volatility(option_data, K);
 r = r(1:floor(T*365)); % only use the rates we need 
@@ -37,27 +36,26 @@ S_low = floor(S_low); S_high = ceil(S_high);
 
 % Price boundaries, 
 S0 = log(2600);
-K = K; % NOT LOGGED
 x_low = log(S_low);
 x_high = log(S_high);
 
 %% Calculate prices
 % Our FD prices
 clc
-[F, x_grid, time, A, B] = anderson_ratcliffe(x_low, x_high, T, N, M, K,...
+[F, x_grid, time, A, B, o] = anderson_ratcliffe(x_low, x_high, T, N, M, K,...
                                       r(1), sigma(1), option);
 
 
-price = exp(x_grid);
+exp_price = exp(x_grid);
 
 % Analytical solution
-analytical_results = bsm_analytical(price, K, T, r(1), sigma(1), option);
+analytical_results = bsm_analytical(exp_price, K, T, r(1), sigma(1), option);
 
 %% Comparision of FD and Analytical
 figure;
-plot(price, F(:,1), 'b-', 'LineWidth', 2);
+plot(exp_price, F(:,1), 'b-', 'LineWidth', 2);
 hold on;
-plot(price, analytical_results, 'r--', 'LineWidth', 2);
+plot(exp_price, analytical_results, 'r--', 'LineWidth', 2);
 legend('FD-method', 'analytical solution', Location='best');
 xlabel('Spot Price');
 ylabel('Option Price');
@@ -67,7 +65,7 @@ grid on;
 
 %% Surf plot
 figure;
-surf(time, price, F);
+surf(time, exp_price, F);
 hold on;
 shading interp              
 colormap jet              
@@ -84,14 +82,14 @@ grid on;
 %% Delta Calculation
 
 % Approximation
-delta_approx = option_delta(F, price);
-delta_bsm = delta_analytical(price, K, T, r(end), sigma(end), option);
+delta_approx = option_delta(F, x_grid, true);
+delta_bsm = delta_analytical(exp_price, K, T, r(end), sigma(end), option);
 
 %% Delta Comparison
 figure;
-plot(price, delta_approx(:, 1), 'b-', 'LineWidth', 2);
+plot(exp_price, delta_approx(:, 1), 'b-', 'LineWidth', 2);
 hold on;
-plot(price, delta_bsm, 'r--', 'LineWidth', 2);
+plot(exp_price, delta_bsm, 'r--', 'LineWidth', 2);
 legend('FD-method', 'analytical solution');
 xlabel('Stock Price');
 ylabel('Option Price');
@@ -101,7 +99,7 @@ grid on;
 
 %% Surf plot of delta
 figure;
-surf(time, price, delta_approx);
+surf(time, exp_price, delta_approx);
 hold on;
 shading interp              
 colormap jet              

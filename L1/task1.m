@@ -1,10 +1,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Author:  Adam Hallberg, Oscar Ljungdahl
-% Date:    2025-09-13
-% Status:  Incomplete
+% Date:    2025-09-19
+% Status:  Complete
 %
 % Comments:
-%   Uppgift 1 är klar.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Setup
@@ -75,7 +74,7 @@ grid on;
 %% Delta Calculation
 
 % Approximation
-delta_approx = option_delta(F, price);
+delta_approx = option_delta(F, price, false);
 delta_bsm = delta_analytical(price, K, T, r(end), sigma(end), option);
 
 %% Delta Comparison
@@ -100,7 +99,7 @@ colorbar
 xlabel('Time');
 ylabel('Spot Price');
 zlabel('Value of Option')
-title(sprintf('%s Option Price Over Time and Spot ', option));
+title(sprintf('%s Option Delta', option));
 grid on;
 
 

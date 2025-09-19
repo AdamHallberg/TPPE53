@@ -1,4 +1,4 @@
-function [A, B, alpha_1, gamma_end] = andersen_ratcliffe_coeff(v_j, b_j, r_j, dt, dx)
+function [A, B, alpha_1, gamma_end] = andersen_ratcliffe_coeff(v_j, b_j, r_j, dt, dx, M)
     % vol: vector of local implicit volatility for internal points at time
     % j we do however not have a dependence on the price here.
     % b_j: defined as in article
@@ -6,18 +6,11 @@ function [A, B, alpha_1, gamma_end] = andersen_ratcliffe_coeff(v_j, b_j, r_j, dt
     % dt: time step
     % dx: spacing in x-direction
     
-    M = length(v_j);
     alpha = dt / (dx^2);
     
-    % Initialize coefficients for the tridiagonal matrix M
-    l = zeros(M, 1); % subdiagonal elements (for H_{i-1})
-    c = zeros(M, 1); % diagonal elements (for H_i)
-    u = zeros(M, 1); % superdiagonal elements (for H_{i+1})
-    
-    
-    c = -alpha * v_j;
-    u = 0.5 * alpha * (v_j + dx * b_j);
-    l = 0.5 * alpha * (v_j - dx * b_j);
+    c = ones(M, 1).*(-alpha * v_j);
+    u = ones(M, 1).*(0.5 * alpha * (v_j + dx * b_j));
+    l = ones(M, 1).*(0.5 * alpha * (v_j - dx * b_j));
     
     
     % Build the tridiagonal matrix M

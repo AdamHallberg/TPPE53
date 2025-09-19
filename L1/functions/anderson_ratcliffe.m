@@ -1,4 +1,4 @@
-function [F, x_grid, time, A, B] = anderson_ratcliffe(x_low, x_high, T, N, M, K, r, sigma, option)
+function [F, x_grid, time, A, B, o] = anderson_ratcliffe(x_low, x_high, T, N, M, K, r, sigma, option)
     % Discretization
     dt = T / N;
     dx = (x_high - x_low) / (M+1); 
@@ -22,6 +22,8 @@ function [F, x_grid, time, A, B] = anderson_ratcliffe(x_low, x_high, T, N, M, K,
     else
         F(1, :) = K*exp(-r*time_to_maturity) - exp(x_low);
     end
+
+    o = F;
 
     % Determine Coefficients and matrices
     v_j = sigma^2; 

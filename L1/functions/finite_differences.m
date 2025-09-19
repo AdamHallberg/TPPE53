@@ -1,4 +1,4 @@
-function [F, price, time] = finite_differences(S_low, S_high, T, N, M, K, r, sigma, option, q)
+function [F, price, time] = finite_differences(S_low, S_high, T, N, M, K, r, sigma, option)
 % FINITE_DIFFERENCES - Finite difference method for option pricing
     % Discretization
     dt = T / N;
@@ -20,7 +20,7 @@ function [F, price, time] = finite_differences(S_low, S_high, T, N, M, K, r, sig
     end
 
     % Get the matrices describing the dynamics
-    [A, B, alpha1, gamma_end] = crank_nicholson_coeff(price(2:end-1), r, sigma, dt, dS, q);
+    [A, B, alpha1, gamma_end] = crank_nicholson_coeff(price(2:end-1), r, sigma, dt, dS);
 
     for n = N+1:-1:2
         % Build RHS: B * F_known(2:end-1)

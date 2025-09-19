@@ -37,9 +37,8 @@ S_low = floor(S_low); S_high = ceil(S_high);
 
 %% Calculate prices
 % Our FD prices
-clc
 [F, price, time] = finite_differences(S_low, S_high, T, N, M, K,...
-                                      r(1), sigma(1), option, q);
+                                      r(1), sigma(1), option);
 
     % Analytical solution
 analytical_results = bsm_analytical(price, K, T, r(1), sigma(1), option);

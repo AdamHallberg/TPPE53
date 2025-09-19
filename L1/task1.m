@@ -98,7 +98,7 @@ colormap jet
 colorbar     
 xlabel('Time');
 ylabel('Spot Price');
-zlabel('Value of Option')
+zlabel('Delta of Option')
 title(sprintf('%s Option Delta', option));
 grid on;
 

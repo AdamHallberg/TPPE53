@@ -56,7 +56,7 @@ figure;
 plot(exp_price, F(:,1), 'b-', 'LineWidth', 2);
 hold on;
 plot(exp_price, analytical_results, 'r--', 'LineWidth', 2);
-legend('FD-method', 'analytical solution', Location='best');
+legend('Anderson-Ratcliffe FD-method', 'analytical solution', Location='best');
 xlabel('Spot Price');
 ylabel('Option Price');
 title(sprintf('%s Option Price Comparison ', option));
@@ -90,7 +90,7 @@ figure;
 plot(exp_price, delta_approx(:, 1), 'b-', 'LineWidth', 2);
 hold on;
 plot(exp_price, delta_bsm, 'r--', 'LineWidth', 2);
-legend('FD-method', 'analytical solution');
+legend('Anderson-Ratcliffe FD-method', 'analytical solution');
 xlabel('Stock Price');
 ylabel('Option Price');
 title(sprintf(['Call Option Price Comparison (K=%d, T=%.1f, ...' ...
@@ -106,8 +106,8 @@ colormap jet
 colorbar     
 xlabel('Time');
 ylabel('Spot Price');
-zlabel('Value of Option')
-title(sprintf('%s Option Price Over Time and Spot ', option));
+zlabel('Delta of Option')
+title(sprintf('%s Option Delta Over Time and Spot ', option));
 grid on;
 
 
